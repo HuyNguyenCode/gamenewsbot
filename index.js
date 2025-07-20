@@ -9,14 +9,14 @@ const client = new Client({
 
 // 🕹️ Các nguồn tin tức game uy tín
 const RSS_FEEDS = [
-  "https://feeds.feedburner.com/ign/all",               // IGN (OK)
-  "https://kotaku.com/rss",                             // Kotaku
-  "https://www.gamespot.com/feeds/news/",               // GameSpot
-  "https://feeds.feedburner.com/Polygon",               // Polygon
-  "https://www.pcgamer.com/rss/",                       // PC Gamer
-  "https://www.nintendolife.com/feeds/latest",          // Nintendo Life
-  "https://www.pushsquare.com/feeds/latest",            // PlayStation news
-  "https://news.xbox.com/en-us/feed/",                  // Xbox Wire (thay thế XboxAchievements)
+  "https://feeds.feedburner.com/ign/all", // IGN (OK)
+  "https://kotaku.com/rss", // Kotaku
+  "https://www.gamespot.com/feeds/news/", // GameSpot
+  "https://feeds.feedburner.com/Polygon", // Polygon
+  "https://www.pcgamer.com/rss/", // PC Gamer
+  "https://www.nintendolife.com/feeds/latest", // Nintendo Life
+  "https://www.pushsquare.com/feeds/latest", // PlayStation news
+  "https://news.xbox.com/en-us/feed/", // Xbox Wire (thay thế XboxAchievements)
 ];
 
 const CHANNEL_ID = "909332386846748672"; // <-- THAY BẰNG ID KÊNH DISCORD
@@ -68,7 +68,20 @@ async function processQueue() {
       return;
     }
 
-    await channel.send(`🕹️ **${item.title}**\n🔗 ${item.link}`);
+    let msg = `🕹️ **${item.title}**\n🔗 ${item.link}`;
+
+    // Bỏ bài viết nếu có ký tự lỗi
+    if (!item.title || !item.link || /�/.test(msg)) {
+      console.warn("⚠️ Skipping malformed message:", msg);
+      return;
+    }
+
+    // Cắt nếu quá dài
+    if (msg.length > 2000) msg = msg.slice(0, 1990) + "...";
+
+    // Gửi
+    await channel.send(msg);
+    
     sentToday++;
     console.log(`✅ Sent: ${item.title}`);
   } catch (err) {
@@ -91,7 +104,8 @@ function scheduleDailyReset() {
 }
 
 // Gửi bài theo delay random
-const min = 5, max = 10;
+const min = 5,
+  max = 10;
 async function scheduleNextSend() {
   await processQueue();
   const delay = (Math.floor(Math.random() * (max - min + 1)) + min) * 60000;
