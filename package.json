@@ -1,0 +1,19 @@
+{
+  "name": "discord-rss-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.0.1",
+    "express": "^5.1.0",
+    "node-schedule": "^2.1.1",
+    "rss-parser": "^3.13.0"
+  }
+}
