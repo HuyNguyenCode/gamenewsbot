@@ -7,8 +7,6 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
-const keep_alive = require("./keep_alive.js"); // nếu bạn deploy trên Replit
-
 // 🕹️ Các nguồn tin tức game uy tín
 const RSS_FEEDS = [
   "https://feeds.feedburner.com/ign/all",               // IGN (OK)
@@ -111,7 +109,6 @@ client.once("ready", () => {
 });
 client.login(process.env.BOT_TOKEN);
 
-// Keep-alive cho UptimeRobot
 const app = express();
 const port = process.env.PORT || 3000;
 app.get("/", (req, res) => res.status(200).send("✅ Bot is alive!"));
