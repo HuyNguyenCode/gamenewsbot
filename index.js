@@ -1,30 +1,35 @@
 const RSSParser = require("rss-parser");
 const { Client, GatewayIntentBits } = require("discord.js");
+const express = require("express");
 
 const parser = new RSSParser();
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
+const keep_alive = require("./keep_alive.js"); // nếu bạn deploy trên Replit
 
+// 🕹️ Các nguồn tin tức game uy tín
 const RSS_FEEDS = [
-  "https://techcrunch.com/feed/",
-  "https://www.theverge.com/rss/index.xml",
-  "https://www.wired.com/feed/category/gear/latest/rss",
-  "https://feeds.arstechnica.com/arstechnica/technology-lab",
-  "https://www.engadget.com/rss.xml",
-  "https://www.cnet.com/rss/news/",
-  "https://www.zdnet.com/news/rss.xml",
+  "https://feeds.feedburner.com/ign/all",               // IGN (OK)
+  "https://kotaku.com/rss",                             // Kotaku
+  "https://www.gamespot.com/feeds/news/",               // GameSpot
+  "https://feeds.feedburner.com/Polygon",               // Polygon
+  "https://www.pcgamer.com/rss/",                       // PC Gamer
+  "https://www.nintendolife.com/feeds/latest",          // Nintendo Life
+  "https://www.pushsquare.com/feeds/latest",            // PlayStation news
+  "https://news.xbox.com/en-us/feed/",                  // Xbox Wire (thay thế XboxAchievements)
 ];
-const CHANNEL_ID = "1387441710895730718"; // Thay bằng channel id thật
+
+const CHANNEL_ID = "YOUR_CHANNEL_ID"; // <-- THAY BẰNG ID KÊNH DISCORD
 
 let lastItems = {};
 let queue = [];
 let sentToday = 0;
 
-// Hàm quét RSS → đưa bài mới vào queue
+// Lấy tin mới → đưa vào hàng đợi
 async function fetchFeeds() {
-  console.log("🔎 Fetching feeds...");
+  console.log("🎮 Fetching game news...");
   for (let feedUrl of RSS_FEEDS) {
     try {
       const feed = await parser.parseURL(feedUrl);
@@ -36,16 +41,16 @@ async function fetchFeeds() {
             title: latest.title,
             link: latest.link,
           });
-          console.log(`🆕 New article queued: ${latest.title}`);
+          console.log(`🆕 New game article queued: ${latest.title}`);
         }
       }
     } catch (err) {
-      console.error(`❌ Error parsing ${feedUrl}:`, err);
+      console.error(`❌ Error parsing ${feedUrl}:`, err.message);
     }
   }
 }
 
-// Hàm gửi tin từ queue với khoảng cách delay
+// Gửi từng bài trong hàng đợi
 async function processQueue() {
   if (queue.length === 0) {
     console.log("⏸ Queue empty, waiting...");
@@ -56,14 +61,24 @@ async function processQueue() {
     return;
   }
 
-  const item = queue.shift();
-  const channel = await client.channels.fetch(CHANNEL_ID);
-  await channel.send(`**${item.title}**\n🔗 ${item.link}`);
-  sentToday++;
-  console.log(`✅ Sent: ${item.title}`);
+  try {
+    const item = queue.shift();
+    const channel = await client.channels.fetch(CHANNEL_ID);
+
+    if (!channel.permissionsFor(client.user).has("SendMessages")) {
+      console.error("❌ Missing permission to send messages.");
+      return;
+    }
+
+    await channel.send(`🕹️ **${item.title}**\n🔗 ${item.link}`);
+    sentToday++;
+    console.log(`✅ Sent: ${item.title}`);
+  } catch (err) {
+    console.error("❌ Failed to send message:", err.message);
+  }
 }
 
-// Reset số lượng tin đã gửi mỗi ngày
+// Reset mỗi ngày
 function scheduleDailyReset() {
   const now = new Date();
   const nextMidnight = new Date(now);
@@ -77,35 +92,27 @@ function scheduleDailyReset() {
   }, msUntilReset);
 }
 
-const min = 5,
-  max = 10;
-
+// Gửi bài theo delay random
+const min = 5, max = 10;
 async function scheduleNextSend() {
   await processQueue();
-  const randomDelay =
-    (Math.floor(Math.random() * (max - min + 1)) + min) * 60 * 1000;
-  console.log(`⏳ Next article will be sent in ${randomDelay / 60000} minutes`);
-  setTimeout(scheduleNextSend, randomDelay);
+  const delay = (Math.floor(Math.random() * (max - min + 1)) + min) * 60000;
+  console.log(`⏳ Next article in ${delay / 60000} minutes`);
+  setTimeout(scheduleNextSend, delay);
 }
 
+// Khởi động bot
 client.once("ready", () => {
   console.log(`🤖 Logged in as ${client.user.tag}`);
-  fetchFeeds(); // quét ngay khi khởi động
+  fetchFeeds();
   scheduleDailyReset();
-  setInterval(fetchFeeds, 30 * 60 * 1000); // quét RSS mỗi 30 phút
-  scheduleNextSend(); // bắt đầu gửi tin dãn cách
+  setInterval(fetchFeeds, 30 * 60 * 1000);
+  scheduleNextSend();
 });
 client.login(process.env.BOT_TOKEN);
 
-const express = require("express");
+// Keep-alive cho UptimeRobot
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Route cho UptimeRobot kiểm tra
-app.get("/", (req, res) => {
-  res.status(200).send("✅ Bot is alive!");
-});
-
-app.listen(port, () => {
-  console.log(`✅ HTTP server listening on port ${port}`);
-});
+app.get("/", (req, res) => res.status(200).send("✅ Bot is alive!"));
+app.listen(port, () => console.log(`✅ HTTP server on port ${port}`));
