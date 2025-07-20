@@ -19,7 +19,7 @@ const RSS_FEEDS = [
   "https://news.xbox.com/en-us/feed/",                  // Xbox Wire (thay thế XboxAchievements)
 ];
 
-const CHANNEL_ID = "YOUR_CHANNEL_ID"; // <-- THAY BẰNG ID KÊNH DISCORD
+const CHANNEL_ID = "909332386846748672"; // <-- THAY BẰNG ID KÊNH DISCORD
 
 let lastItems = {};
 let queue = [];
